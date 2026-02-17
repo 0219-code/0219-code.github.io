@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>春晚魔术计算器 · 相等四位数触发</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+            user-select: none;
+        }
+        body {
+            background: linear-gradient(145deg, #2b2e3a 0%, #1e2129 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 12px;
+        }
+        .calculator {
+            width: 620px;
+            background: #3a3f4b;
+            border-radius: 24px;
+            padding: 24px 20px 30px 20px;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5), inset 0 1px 3px rgba(255, 255, 255, 0.1);
+            border: 1px solid #5f6675;
+        }
+        .time-panel {
+            background: #282c36;
+            color: #d4dcec;
+            padding: 12px 18px;
+            border-radius: 60px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            font-size: 1.1rem;
+            border: 1px solid #4f5666;
+            box-shadow: inset 0 2px 5px #15181f;
+        }
+        .time-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .magic-number {
+            background: #1b1f29;
+            padding: 5px 16px;
+            border-radius: 40px;
+            color: #f5dd9d;
+            font-family: 'Courier New', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border: 1px solid #7a6240;
+            box-shadow: inset 0 0 8px #00000055;
+        }
+        .display-wrap {
+            background: #232732;
+            border-radius: 16px;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+            text-align: right;
+            border: 2px solid #515a6b;
+            box-shadow: inset 0 4px 8px #0b0d12;
+        }
+        .display {
+            font-size: 3.4rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: #f2f6ff;
+            line-height: 1.2;
+            min-height: 85px;
+            text-shadow: 0 0 8px #729fcf66;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .btn {
+            background: #4e5464;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 0;
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: #edf2fc;
+            box-shadow: 0 6px 0 #2a2e38, 0 8px 10px rgba(0,0,0,0.4);
+            transition: all 0.06s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #6b7385;
+        }
+        .btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #2a2e38, 0 5px 8px rgba(0,0,0,0.4);
+        }
+        .btn.function {
+            background: #656d82;
+            font-size: 1.1rem;
+        }
+        .btn.operator {
+            background: #f09b4b;
+            color: #1f1e2b;
+            font-weight: 700;
+            box-shadow: 0 6px 0 #b4621e, 0 8px 10px rgba(0,0,0,0.4);
+            border-color: #ffbc6e;
+        }
+        .btn.operator:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #b4621e, 0 5px 8px rgba(0,0,0,0.4);
+        }
+        .btn.equals {
+            background: #3f76b9;
+            box-shadow: 0 6px 0 #1f4980, 0 8px 10px rgba(0,0,0,0.4);
+            border-color: #8cb2e0;
+        }
+        .btn.memory {
+            background: #5d5f6e;
+            font-size: 1rem;
+        }
+        .btn.zero {
+            grid-column: span 2;
+        }
+        .footer-note {
+            color: #8f99aa;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+        }
+        .magic-hint {
+            font-size: 0.9rem;
+            color: #b4bbd0;
+            background: #2f3542;
+            border-radius: 40px;
+            padding: 4px 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="calculator">
+    <div class="time-panel">
+        <div class="time-label">
+            <span>📅 当前时间</span>
+            <span id="currentTimeStr" style="font-family: monospace;">2026-02-17 17:20</span>
+        </div>
+        <div class="magic-number" id="magicPreview">2171720</div>
+    </div>
+
+    <div class="display-wrap">
+        <div class="display" id="display">0</div>
+    </div>
+
+    <div class="button-grid">
+        <!-- 第一行 科学/内存 -->
+        <button class="btn function" data-action="sin">sin</button>
+        <button class="btn function" data-action="cos">cos</button>
+        <button class="btn function" data-action="tan">tan</button>
+        <button class="btn function" data-action="ln">ln</button>
+        <button class="btn function" data-action="log">log</button>
+        <button class="btn function" data-action="sqrt">√</button>
+
+        <!-- 第二行 -->
+        <button class="btn memory" data-action="mc">MC</button>
+        <button class="btn memory" data-action="mr">MR</button>
+        <button class="btn memory" data-action="m+">M+</button>
+        <button class="btn memory" data-action="ms">MS</button>
+        <button class="btn function" data-action="x2">x²</button>
+        <button class="btn function" data-action="1x">1/x</button>
+
+        <!-- 第三行 -->
+        <button class="btn function" data-action="%">%</button>
+        <button class="btn function" data-action="ce">CE</button>
+        <button class="btn function" data-action="c">C</button>
+        <button class="btn function" data-action="back">⌫</button>
+        <button class="btn function" data-action="pow">xʸ</button>
+        <button class="btn operator" data-action="/">÷</button>
+
+        <!-- 第四行 -->
+        <button class="btn" data-action="num">7</button>
+        <button class="btn" data-action="num">8</button>
+        <button class="btn" data-action="num">9</button>
+        <button class="btn operator" data-action="*">×</button>
+        <button class="btn function" data-action="fact">n!</button>
+        <button class="btn operator" data-action="+">+</button>
+
+        <!-- 第五行 -->
+        <button class="btn" data-action="num">4</button>
+        <button class="btn" data-action="num">5</button>
+        <button class="btn" data-action="num">6</button>
+        <button class="btn operator" data-action="-">−</button>
+        <button class="btn function" data-action="mod">mod</button>
+        <button class="btn operator" data-action="+">+</button>   <!-- 第二个+ -->
+
+        <!-- 第六行 -->
+        <button class="btn" data-action="num">1</button>
+        <button class="btn" data-action="num">2</button>
+        <button class="btn" data-action="num">3</button>
+        <button class="btn function" data-action="exp">exp</button>
+        <button class="btn function" data-action="rand">rand</button>
+        <button class="btn equals" data-action="=">=</button>
+
+        <!-- 第七行 -->
+        <button class="btn zero" data-action="num">0</button>
+        <button class="btn" data-action=".">.</button>
+        <button class="btn function" data-action="±">±</button>
+        <button class="btn function" data-action="pi">π</button>
+        <button class="btn function" data-action="e">e</button>
+        <button class="btn function" data-action="(">(</button>
+    </div>
+
+    <div class="footer-note">
+        <span class="magic-hint">✨ 魔术: 两个相同的四位数 + (任意数) → 第三数自动变成上方魔数</span>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ---------- 获取当前时间并生成魔术数 ----------
+    function getMagicFromTime() {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        return `${month}${day}${hour}${minute}`;
+    }
+
+    function updateTimeDisplay() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = (now.getMonth()+1).toString().padStart(2,'0');
+        const d = now.getDate().toString().padStart(2,'0');
+        const h = now.getHours().toString().padStart(2,'0');
+        const min = now.getMinutes().toString().padStart(2,'0');
+        document.getElementById('currentTimeStr').innerText = `${y}-${m}-${d} ${h}:${min}`;
+        document.getElementById('magicPreview').innerText = getMagicFromTime();
+    }
+    updateTimeDisplay();
+    setInterval(updateTimeDisplay, 1000);
+
+    // ---------- 计算器核心变量 ----------
+    let display = document.getElementById('display');
+    let displayValue = '0';
+    let firstOperand = null;          // 第一个操作数
+    let secondOperand = null;         // 用于魔术时暂存第二个操作数
+    let operator = null;              // 当前运算符
+    let waitingForSecond = false;     // 是否等待输入第二个操作数
+    let magicReady = false;           // 魔术准备触发
+    let memory = 0;
+
+    // 辅助：判断是否为四位正整数
+    function isFourDigitNumber(str) {
+        if (typeof str !== 'string') return false;
+        if (!/^\d+$/.test(str)) return false;
+        if (str.length !== 4) return false;
+        const num = Number(str);
+        return num >= 1000 && num <= 9999;
+    }
+
+    function updateDisplay(val) {
+        displayValue = val.toString();
+        display.innerText = displayValue;
+    }
+
+    // ---------- 数字输入 ----------
+    function handleDigit(digit) {
+        // 如果处于魔术预备状态，则触发魔术替换
+        if (magicReady && waitingForSecond) {
+            // 计算前两个数的和，作为新的 firstOperand
+            const sum = firstOperand + secondOperand;
+            firstOperand = sum;
+            // 显示魔术数
+            const magicNum = getMagicFromTime();
+            updateDisplay(magicNum);
+            // 清除魔术状态
+            magicReady = false;
+            secondOperand = null;
+            waitingForSecond = false;   // 当前显示魔术数，可作为下一个操作数
+            return;
+        }
+
+        // 普通数字输入
+        if (waitingForSecond) {
+            displayValue = digit;
+            waitingForSecond = false;
+        } else {
+            displayValue = displayValue === '0' ? digit : displayValue + digit;
+        }
+        updateDisplay(displayValue);
+    }
+
+    // ---------- 运算符处理 ----------
+    function handleOperator(op) {
+        const current = parseFloat(displayValue);
+
+        // 等号处理
+        if (op === '=') {
+            if (operator && !waitingForSecond && firstOperand !== null) {
+                let result;
+                switch (operator) {
+                    case '+': result = firstOperand + current; break;
+                    case '-': result = firstOperand - current; break;
+                    case '*': result = firstOperand * current; break;
+                    case '/': result = current !== 0 ? firstOperand / current : NaN; break;
+                    default: result = current;
+                }
+                if (isNaN(result)) updateDisplay('错误');
+                else updateDisplay(parseFloat(result.toFixed(10)).toString());
+                firstOperand = null;
+                operator = null;
+                waitingForSecond = false;
+                magicReady = false;
+                secondOperand = null;
+            }
+            return;
+        }
+
+        // 单目运算符（简略实现）
+        if (['sin','cos','tan','ln','log','sqrt','x2','1x','%','±','exp','fact','rand','pi','e'].includes(op)) {
+            applyUnary(op, current);
+            return;
+        }
+
+        // 双目运算符处理
+        if (firstOperand === null) {
+            // 第一个操作数
+            firstOperand = current;
+            operator = op;
+            waitingForSecond = true;
+            magicReady = false;   // 新开始，清除魔术预备
+            secondOperand = null;
+        } else if (!waitingForSecond) {
+            // 已经有两个操作数（刚输入完第二个数），按下运算符
+            if (op === '+' && isFourDigitNumber(firstOperand.toString()) && isFourDigitNumber(displayValue) && firstOperand === parseFloat(displayValue)) {
+                // 魔术条件满足：两个数都是四位数且相等
+                // 暂存第二个操作数，准备魔术
+                secondOperand = current;
+                operator = op;
+                waitingForSecond = true;   // 等待第三个数
+                magicReady = true;          // 开启魔术预备
+                // 保持显示不变（显示第二个数）
+                return;
+            } else {
+                // 普通情况：先计算中间结果
+                let intermediate;
+                switch (operator) {
+                    case '+': intermediate = firstOperand + current; break;
+                    case '-': intermediate = firstOperand - current; break;
+                    case '*': intermediate = firstOperand * current; break;
+                    case '/': intermediate = current !== 0 ? firstOperand / current : NaN; break;
+                    default: intermediate = current;
+                }
+                if (isNaN(intermediate)) { updateDisplay('错误'); resetAll(); return; }
+                firstOperand = intermediate;
+                updateDisplay(firstOperand.toString());
+                operator = op;
+                waitingForSecond = true;
+                magicReady = false;
+                secondOperand = null;
+            }
+        } else {
+            // 连续按运算符（还没输入第二数）——简单处理为更换运算符
+            operator = op;
+            waitingForSecond = true;
+        }
+    }
+
+    // 单目运算（保持原有功能）
+    function applyUnary(cmd, value) {
+        let res;
+        switch (cmd) {
+            case 'sin': res = Math.sin(value); break;
+            case 'cos': res = Math.cos(value); break;
+            case 'tan': res = Math.tan(value); break;
+            case 'ln': res = Math.log(value); break;
+            case 'log': res = Math.log10(value); break;
+            case 'sqrt': res = Math.sqrt(value); break;
+            case 'x2': res = value * value; break;
+            case '1x': res = 1 / value; break;
+            case '%': res = value / 100; break;
+            case '±': res = -value; break;
+            case 'exp': res = Math.exp(value); break;
+            case 'fact': // 简单阶乘
+                if (value < 0 || !Number.isInteger(value)) res = NaN;
+                else { let f=1; for(let i=2;i<=value;i++) f*=i; res=f; }
+                break;
+            case 'rand': res = Math.random(); break;
+            case 'pi': res = Math.PI; break;
+            case 'e': res = Math.E; break;
+            default: return;
+        }
+        if (isNaN(res) || !isFinite(res)) updateDisplay('错误');
+        else updateDisplay(parseFloat(res.toFixed(10)).toString());
+        firstOperand = null;
+        operator = null;
+        waitingForSecond = false;
+        magicReady = false;
+        secondOperand = null;
+    }
+
+    function handleCommand(cmd) {
+        switch (cmd) {
+            case 'c':
+            case 'ce':
+                displayValue = '0';
+                firstOperand = null;
+                operator = null;
+                waitingForSecond = false;
+                magicReady = false;
+                secondOperand = null;
+                updateDisplay('0');
+                break;
+            case 'back':
+                displayValue = displayValue.length > 1 ? displayValue.slice(0, -1) : '0';
+                updateDisplay(displayValue);
+                break;
+            case 'mc': memory = 0; break;
+            case 'mr': displayValue = memory.toString(); updateDisplay(displayValue); waitingForSecond = false; break;
+            case 'm+': memory += parseFloat(displayValue) || 0; break;
+            case 'ms': memory = parseFloat(displayValue) || 0; break;
+            default: break;
+        }
+    }
+
+    function resetAll() {
+        displayValue = '0';
+        firstOperand = null;
+        operator = null;
+        waitingForSecond = false;
+        magicReady = false;
+        secondOperand = null;
+        updateDisplay('0');
+    }
+
+    // ---------- 按钮事件绑定 ----------
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const action = btn.dataset.action;
+            const text = btn.innerText;
+
+            if (action === 'num') {
+                if (text === '.' && displayValue.includes('.')) return;
+                handleDigit(text);
+            } else if (action === '=') {
+                handleOperator('=');
+            } else if (['+', '-', '*', '/', 'mod', 'pow'].includes(action) || text === '+' || text === '−' || text === '×' || text === '÷') {
+                let op = text;
+                if (text === '×') op = '*';
+                else if (text === '÷') op = '/';
+                else if (text === '−') op = '-';
+                else if (text === 'mod') op = '%';
+                else if (text === 'xʸ') op = '^';
+                handleOperator(op);
+            } else if (action === 'c' || action === 'ce' || action === 'back' || ['mc','mr','m+','ms'].includes(action)) {
+                handleCommand(action);
+            } else if (action) {
+                const val = parseFloat(displayValue) || 0;
+                applyUnary(action, val);
+            }
+        });
+    });
+
+    // 补充 mod 和 pow 的简易处理（通过覆盖 handleOperator 增强）
+    const originalHandleOperator = handleOperator;
+    handleOperator = function(op) {
+        if (op === '^' || op === '%') {
+            const current = parseFloat(displayValue);
+            if (firstOperand === null) {
+                firstOperand = current;
+            } else if (!waitingForSecond) {
+                let res;
+                if (op === '^') res = Math.pow(firstOperand, current);
+                else res = firstOperand % current;
+                if (!isNaN(res)) updateDisplay(res.toString());
+                firstOperand = res;
+            }
+            operator = op;
+            waitingForSecond = true;
+            magicReady = false;
+            secondOperand = null;
+            return;
+        }
+        originalHandleOperator(op);
+    }.bind(this);
+
+    // 重新绑定事件以确保新 handleOperator 生效（简单处理，不影响原绑定）
+    // 可以直接在点击事件中调用新的 handleOperator，但上面已经绑定匿名函数，所以我们用新函数替换引用
+    // 在事件监听中实际调用的是 handleOperator，所以只需将 handleOperator 变量指向新函数即可。
+    // 上面已经通过赋值改变了 handleOperator，但注意作用域：事件监听内调用的是外部声明的 handleOperator，现在已被覆盖，没问题。
+
+    // ---------- 键盘支持 ----------
+    document.addEventListener('keydown', (e) => {
+        const key = e.key;
+        // 阻止默认行为（如 / 触发搜索）
+        if (['/', '*', 'Enter', 'Escape', 'Backspace', 'Delete', '+', '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(key)) {
+            e.preventDefault();
+        }
+
+        if (key === '/') {
+            document.querySelector('[data-action="/"]')?.click();
+        } else if (key === '*') {
+            document.querySelector('[data-action="*"]')?.click();
+        } else if (key === 'Enter' || key === '=') {
+            document.querySelector('[data-action="="]')?.click();
+        } else if (key === 'Escape') {
+            document.querySelector('[data-action="c"]')?.click();  // AC
+        } else if (key === 'Backspace') {
+            document.querySelector('[data-action="back"]')?.click();
+        } else if (key === '+') {
+            document.querySelectorAll('[data-action="+"]')[0]?.click();
+        } else if (key === '-') {
+            document.querySelector('[data-action="-"]')?.click();
+        } else if (key === '.') {
+            document.querySelector('[data-action="."]')?.click();
+        } else if (key >= '0' && key <= '9') {
+            const numBtn = Array.from(document.querySelectorAll('[data-action="num"]')).find(btn => btn.innerText === key);
+            numBtn?.click();
+        }
+    });
+
+    // 初始化
+    resetAll();
+})();
+</script>
+</body>
+</html>
