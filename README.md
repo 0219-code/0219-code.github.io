@@ -19,9 +19,9 @@ if (a >= 1000 && a <= 9999 && a == b) {
 ## 在线体验
 
 项目已部署在 GitHub Pages，可通过以下链接直接访问：  
-🔗 [https://你的用户名.github.io/仓库名/](https://你的用户名.github.io/仓库名/)
+🔗 [https://0219-code.github.io/](https://0219-code.github.io/)
 
-若未部署，可下载 `index.html` 文件并在浏览器中打开。
+若未部署，可下载 <a doenload herf="index.html">`index.html`</a> 文件并在浏览器中打开。
 
 ## 魔术效果说明
 
