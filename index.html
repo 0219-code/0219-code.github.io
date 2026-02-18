@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>春晚魔术计算器 · 相等四位数触发</title>
+    <title>春晚魔术计算器 · 相同四位数触发 · 等号可用</title>
     <style>
         * {
             box-sizing: border-box;
@@ -74,6 +74,7 @@
             line-height: 1.2;
             min-height: 85px;
             text-shadow: 0 0 8px #729fcf66;
+            word-wrap: break-word;
         }
         .button-grid {
             display: grid;
@@ -128,6 +129,13 @@
         .btn.zero {
             grid-column: span 2;
         }
+        .btn:disabled {
+            opacity: 0.3;
+            filter: grayscale(80%);
+            transform: none;
+            pointer-events: none;
+            box-shadow: 0 4px 0 #2a2e38;
+        }
         .footer-note {
             color: #8f99aa;
             text-align: center;
@@ -148,9 +156,9 @@
     <div class="time-panel">
         <div class="time-label">
             <span>📅 当前时间</span>
-            <span id="currentTimeStr" style="font-family: monospace;">2026-02-17 17:20</span>
+            <span id="currentTimeStr" style="font-family: monospace;">--</span>
         </div>
-        <div class="magic-number" id="magicPreview">2171720</div>
+        <div class="magic-number" id="magicPreview">--</div>
     </div>
 
     <div class="display-wrap">
@@ -158,7 +166,6 @@
     </div>
 
     <div class="button-grid">
-        <!-- 第一行 科学/内存 -->
         <button class="btn function" data-action="sin">sin</button>
         <button class="btn function" data-action="cos">cos</button>
         <button class="btn function" data-action="tan">tan</button>
@@ -166,7 +173,6 @@
         <button class="btn function" data-action="log">log</button>
         <button class="btn function" data-action="sqrt">√</button>
 
-        <!-- 第二行 -->
         <button class="btn memory" data-action="mc">MC</button>
         <button class="btn memory" data-action="mr">MR</button>
         <button class="btn memory" data-action="m+">M+</button>
@@ -174,7 +180,6 @@
         <button class="btn function" data-action="x2">x²</button>
         <button class="btn function" data-action="1x">1/x</button>
 
-        <!-- 第三行 -->
         <button class="btn function" data-action="%">%</button>
         <button class="btn function" data-action="ce">CE</button>
         <button class="btn function" data-action="c">C</button>
@@ -182,7 +187,6 @@
         <button class="btn function" data-action="pow">xʸ</button>
         <button class="btn operator" data-action="/">÷</button>
 
-        <!-- 第四行 -->
         <button class="btn" data-action="num">7</button>
         <button class="btn" data-action="num">8</button>
         <button class="btn" data-action="num">9</button>
@@ -190,15 +194,13 @@
         <button class="btn function" data-action="fact">n!</button>
         <button class="btn operator" data-action="+">+</button>
 
-        <!-- 第五行 -->
         <button class="btn" data-action="num">4</button>
         <button class="btn" data-action="num">5</button>
         <button class="btn" data-action="num">6</button>
         <button class="btn operator" data-action="-">−</button>
         <button class="btn function" data-action="mod">mod</button>
-        <button class="btn operator" data-action="+">+</button>   <!-- 第二个+ -->
+        <button class="btn operator" data-action="+">+</button>
 
-        <!-- 第六行 -->
         <button class="btn" data-action="num">1</button>
         <button class="btn" data-action="num">2</button>
         <button class="btn" data-action="num">3</button>
@@ -206,7 +208,6 @@
         <button class="btn function" data-action="rand">rand</button>
         <button class="btn equals" data-action="=">=</button>
 
-        <!-- 第七行 -->
         <button class="btn zero" data-action="num">0</button>
         <button class="btn" data-action=".">.</button>
         <button class="btn function" data-action="±">±</button>
@@ -216,16 +217,16 @@
     </div>
 
     <div class="footer-note">
-        <span class="magic-hint">✨ 魔术: 两个相同的四位数 + (任意数) → 第三数自动变成上方魔数</span>
+        <span class="magic-hint">✨ 魔术: 两个相同的四位数后按两次 + → 第三数变成时间魔数，等号可用</span>
     </div>
 </div>
 
 <script>
 (function() {
-    // ---------- 获取当前时间并生成魔术数 ----------
+    // ---------- 获取当前时间并生成魔术数 (月+日+时+分) ----------
     function getMagicFromTime() {
         const now = new Date();
-        const month = now.getMonth() + 1;
+        const month = now.getMonth() + 1;          // 1-12，不补零
         const day = now.getDate().toString().padStart(2, '0');
         const hour = now.getHours().toString().padStart(2, '0');
         const minute = now.getMinutes().toString().padStart(2, '0');
@@ -243,17 +244,33 @@
         document.getElementById('magicPreview').innerText = getMagicFromTime();
     }
     updateTimeDisplay();
-    setInterval(updateTimeDisplay, 1000);
+    setInterval(updateTimeDisplay, 1000); // 每秒刷新
 
     // ---------- 计算器核心变量 ----------
-    let display = document.getElementById('display');
+    const display = document.getElementById('display');
     let displayValue = '0';
-    let firstOperand = null;          // 第一个操作数
-    let secondOperand = null;         // 用于魔术时暂存第二个操作数
-    let operator = null;              // 当前运算符
-    let waitingForSecond = false;     // 是否等待输入第二个操作数
-    let magicReady = false;           // 魔术准备触发
+    let firstOperand = null;      // 第一个操作数
+    let operator = null;          // 当前运算符
+    let waitingForSecond = false; // 是否等待输入第二个操作数
+    let magicReady = false;       // 魔术预备触发
+    let magicLock = false;        // 魔术已触发，锁定数字键
+    let frozen = false;           // 是否冻结（魔术成功后除C和等号外禁用）
+    let lastFirstValid = false;   // 第一个数是否为四位数
     let memory = 0;
+
+    // 所有按钮，用于控制禁用状态
+    const allButtons = document.querySelectorAll('.btn');
+    function setButtonsEnabled(enabled) {
+        allButtons.forEach(btn => {
+            if (btn.dataset.action === 'c' || btn.dataset.action === 'ce') {
+                btn.disabled = false; // C/CE始终可用
+            } else if (btn.dataset.action === '=') {
+                btn.disabled = false; // 等号始终可用（即使冻结）
+            } else {
+                btn.disabled = !enabled;
+            }
+        });
+    }
 
     // 辅助：判断是否为四位正整数
     function isFourDigitNumber(str) {
@@ -269,24 +286,28 @@
         display.innerText = displayValue;
     }
 
-    // ---------- 数字输入 ----------
+    // 数字输入
     function handleDigit(digit) {
-        // 如果处于魔术预备状态，则触发魔术替换
+        if (frozen || magicLock) return; // 冻结或锁定时不响应数字
+
+        // 魔术触发：处于预备且等待第三个数
         if (magicReady && waitingForSecond) {
-            // 计算前两个数的和，作为新的 firstOperand
-            const sum = firstOperand + secondOperand;
-            firstOperand = sum;
-            // 显示魔术数
+            // 计算前两个数的和 (a + b)
+            const sum = firstOperand + parseFloat(displayValue);
+            firstOperand = sum;          // 保存和作为第一个操作数
+            operator = '+';              // 保持加法运算符
+            waitingForSecond = false;    // 不再等待第二操作数
+
             const magicNum = getMagicFromTime();
-            updateDisplay(magicNum);
-            // 清除魔术状态
+            updateDisplay(magicNum);     // 显示魔术时间
+
             magicReady = false;
-            secondOperand = null;
-            waitingForSecond = false;   // 当前显示魔术数，可作为下一个操作数
+            magicLock = true;             // 锁定后续数字输入
+            frozen = true;                 // 进入冻结状态
+            setButtonsEnabled(false);      // 禁用除C和等号外的所有按钮
             return;
         }
 
-        // 普通数字输入
         if (waitingForSecond) {
             displayValue = digit;
             waitingForSecond = false;
@@ -296,11 +317,13 @@
         updateDisplay(displayValue);
     }
 
-    // ---------- 运算符处理 ----------
+    // 运算符处理
     function handleOperator(op) {
+        // 冻结状态下只允许等号操作，其他操作直接返回
+        if (frozen && op !== '=') return;
+
         const current = parseFloat(displayValue);
 
-        // 等号处理
         if (op === '=') {
             if (operator && !waitingForSecond && firstOperand !== null) {
                 let result;
@@ -313,67 +336,84 @@
                 }
                 if (isNaN(result)) updateDisplay('错误');
                 else updateDisplay(parseFloat(result.toFixed(10)).toString());
+                // 计算后不清除冻结？等号后仍保持冻结？根据需求，等号后仍然冻结，直到按C
+                // 但需要重置操作数防止后续误操作
                 firstOperand = null;
                 operator = null;
                 waitingForSecond = false;
-                magicReady = false;
-                secondOperand = null;
+                // 保持 frozen 为 true，但保留等号可用
             }
             return;
         }
 
-        // 单目运算符（简略实现）
+        // 单目运算符
         if (['sin','cos','tan','ln','log','sqrt','x2','1x','%','±','exp','fact','rand','pi','e'].includes(op)) {
             applyUnary(op, current);
             return;
         }
 
-        // 双目运算符处理
-        if (firstOperand === null) {
-            // 第一个操作数
-            firstOperand = current;
-            operator = op;
-            waitingForSecond = true;
-            magicReady = false;   // 新开始，清除魔术预备
-            secondOperand = null;
-        } else if (!waitingForSecond) {
-            // 已经有两个操作数（刚输入完第二个数），按下运算符
-            if (op === '+' && isFourDigitNumber(firstOperand.toString()) && isFourDigitNumber(displayValue) && firstOperand === parseFloat(displayValue)) {
-                // 魔术条件满足：两个数都是四位数且相等
-                // 暂存第二个操作数，准备魔术
-                secondOperand = current;
-                operator = op;
-                waitingForSecond = true;   // 等待第三个数
-                magicReady = true;          // 开启魔术预备
-                // 保持显示不变（显示第二个数）
+        // 处理加法魔术逻辑
+        if (op === '+') {
+            if (firstOperand === null) {
+                // 第一次按+：存储第一个数
+                firstOperand = current;
+                lastFirstValid = isFourDigitNumber(displayValue);
+                operator = '+';
+                waitingForSecond = true;
                 return;
             } else {
-                // 普通情况：先计算中间结果
-                let intermediate;
-                switch (operator) {
-                    case '+': intermediate = firstOperand + current; break;
-                    case '-': intermediate = firstOperand - current; break;
-                    case '*': intermediate = firstOperand * current; break;
-                    case '/': intermediate = current !== 0 ? firstOperand / current : NaN; break;
-                    default: intermediate = current;
+                // 第二次按+：此时displayValue是第二个数
+                const a = firstOperand;
+                const b = current;
+
+                if (lastFirstValid && isFourDigitNumber(displayValue) && a === b) {
+                    // 满足魔术条件：显示第二个数，激活预备
+                    updateDisplay(b.toString()); // 确保显示第二个数
+                    waitingForSecond = true;      // 等待第三个数
+                    magicReady = true;             // 下次数字输入触发魔术
+                    operator = '+';                // 保持运算符
+                } else {
+                    // 不满足魔术：显示a+b，并重置状态
+                    const sum = a + b;
+                    updateDisplay(sum.toString());
+                    firstOperand = null;
+                    operator = null;
+                    waitingForSecond = false;
+                    magicReady = false;
                 }
-                if (isNaN(intermediate)) { updateDisplay('错误'); resetAll(); return; }
-                firstOperand = intermediate;
-                updateDisplay(firstOperand.toString());
-                operator = op;
-                waitingForSecond = true;
-                magicReady = false;
-                secondOperand = null;
+                return;
             }
+        }
+
+        // 其他双目运算符（常规处理）
+        if (firstOperand === null) {
+            firstOperand = current;
+            lastFirstValid = false; // 非加法不记录四位数状态
+            operator = op;
+            waitingForSecond = true;
+        } else if (!waitingForSecond) {
+            let intermediate;
+            switch (operator) {
+                case '+': intermediate = firstOperand + current; break;
+                case '-': intermediate = firstOperand - current; break;
+                case '*': intermediate = firstOperand * current; break;
+                case '/': intermediate = current !== 0 ? firstOperand / current : NaN; break;
+                default: intermediate = current;
+            }
+            if (isNaN(intermediate)) { updateDisplay('错误'); resetAll(); return; }
+            firstOperand = intermediate;
+            updateDisplay(firstOperand.toString());
+            operator = op;
+            waitingForSecond = true;
         } else {
-            // 连续按运算符（还没输入第二数）——简单处理为更换运算符
             operator = op;
             waitingForSecond = true;
         }
     }
 
-    // 单目运算（保持原有功能）
+    // 单目运算
     function applyUnary(cmd, value) {
+        if (frozen) return;
         let res;
         switch (cmd) {
             case 'sin': res = Math.sin(value); break;
@@ -387,9 +427,9 @@
             case '%': res = value / 100; break;
             case '±': res = -value; break;
             case 'exp': res = Math.exp(value); break;
-            case 'fact': // 简单阶乘
+            case 'fact':
                 if (value < 0 || !Number.isInteger(value)) res = NaN;
-                else { let f=1; for(let i=2;i<=value;i++) f*=i; res=f; }
+                else { let f = 1; for (let i = 2; i <= value; i++) f *= i; res = f; }
                 break;
             case 'rand': res = Math.random(); break;
             case 'pi': res = Math.PI; break;
@@ -402,21 +442,30 @@
         operator = null;
         waitingForSecond = false;
         magicReady = false;
-        secondOperand = null;
+        magicLock = false;
+        frozen = false;
+        setButtonsEnabled(true);
     }
 
+    // 命令处理
     function handleCommand(cmd) {
+        if (cmd === 'c' || cmd === 'ce') {
+            // 重置所有并解冻
+            displayValue = '0';
+            firstOperand = null;
+            operator = null;
+            waitingForSecond = false;
+            magicReady = false;
+            magicLock = false;
+            frozen = false;
+            lastFirstValid = false;
+            updateDisplay('0');
+            setButtonsEnabled(true);
+            return;
+        }
+        if (frozen) return;
+
         switch (cmd) {
-            case 'c':
-            case 'ce':
-                displayValue = '0';
-                firstOperand = null;
-                operator = null;
-                waitingForSecond = false;
-                magicReady = false;
-                secondOperand = null;
-                updateDisplay('0');
-                break;
             case 'back':
                 displayValue = displayValue.length > 1 ? displayValue.slice(0, -1) : '0';
                 updateDisplay(displayValue);
@@ -435,11 +484,14 @@
         operator = null;
         waitingForSecond = false;
         magicReady = false;
-        secondOperand = null;
+        magicLock = false;
+        frozen = false;
+        lastFirstValid = false;
         updateDisplay('0');
+        setButtonsEnabled(true);
     }
 
-    // ---------- 按钮事件绑定 ----------
+    // 按钮事件绑定
     document.querySelectorAll('.btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const action = btn.dataset.action;
@@ -467,39 +519,48 @@
         });
     });
 
-    // 补充 mod 和 pow 的简易处理（通过覆盖 handleOperator 增强）
-    const originalHandleOperator = handleOperator;
-    handleOperator = function(op) {
-        if (op === '^' || op === '%') {
-            const current = parseFloat(displayValue);
-            if (firstOperand === null) {
-                firstOperand = current;
-            } else if (!waitingForSecond) {
-                let res;
-                if (op === '^') res = Math.pow(firstOperand, current);
-                else res = firstOperand % current;
-                if (!isNaN(res)) updateDisplay(res.toString());
-                firstOperand = res;
+    // 简化处理 mod 和 pow
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const txt = this.innerText;
+            if (txt === 'mod' || txt === 'xʸ') {
+                e.stopImmediatePropagation();
+                if (frozen) return;
+                const current = parseFloat(displayValue);
+                if (firstOperand === null) {
+                    firstOperand = current;
+                } else if (operator && !waitingForSecond) {
+                    let res;
+                    if (txt === 'xʸ') res = Math.pow(firstOperand, current);
+                    else res = firstOperand % current;
+                    if (!isNaN(res)) updateDisplay(res.toString());
+                    firstOperand = res;
+                }
+                operator = (txt === 'xʸ') ? '^' : '%';
+                waitingForSecond = true;
+                magicReady = false;
+                magicLock = false;
             }
-            operator = op;
-            waitingForSecond = true;
-            magicReady = false;
-            secondOperand = null;
+        });
+    });
+
+    // 键盘支持
+    document.addEventListener('keydown', (e) => {
+        // 如果已冻结，只允许 Escape 和 Enter/=
+        if (frozen) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                document.querySelector('[data-action="c"]')?.click();
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                document.querySelector('[data-action="="]')?.click();
+            }
             return;
         }
-        originalHandleOperator(op);
-    }.bind(this);
 
-    // 重新绑定事件以确保新 handleOperator 生效（简单处理，不影响原绑定）
-    // 可以直接在点击事件中调用新的 handleOperator，但上面已经绑定匿名函数，所以我们用新函数替换引用
-    // 在事件监听中实际调用的是 handleOperator，所以只需将 handleOperator 变量指向新函数即可。
-    // 上面已经通过赋值改变了 handleOperator，但注意作用域：事件监听内调用的是外部声明的 handleOperator，现在已被覆盖，没问题。
-
-    // ---------- 键盘支持 ----------
-    document.addEventListener('keydown', (e) => {
         const key = e.key;
-        // 阻止默认行为（如 / 触发搜索）
-        if (['/', '*', 'Enter', 'Escape', 'Backspace', 'Delete', '+', '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(key)) {
+        const allowedKeys = ['/', '*', 'Enter', 'Escape', 'Backspace', 'Delete', '+', '-', '.', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        if (allowedKeys.includes(key)) {
             e.preventDefault();
         }
 
@@ -510,7 +571,7 @@
         } else if (key === 'Enter' || key === '=') {
             document.querySelector('[data-action="="]')?.click();
         } else if (key === 'Escape') {
-            document.querySelector('[data-action="c"]')?.click();  // AC
+            document.querySelector('[data-action="c"]')?.click();
         } else if (key === 'Backspace') {
             document.querySelector('[data-action="back"]')?.click();
         } else if (key === '+') {
@@ -525,7 +586,6 @@
         }
     });
 
-    // 初始化
     resetAll();
 })();
 </script>
