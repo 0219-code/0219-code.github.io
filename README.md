@@ -7,7 +7,7 @@
 
 # 星海宝可梦下载教程（小白）
 1. 点击
-   https://github.com/0219-code/PCLD.github.io/releases/download/Downloads/[V1.8.exe](https://github.com/0219-code/PCLD.github.io/releases/download/Downloads/V1.8.exe)
+   <a href="https://github.com/0219-code/PCLD.github.io/releases/download/Downloads/V1.8.exe" download>V1.8.exe</a>
    即可下载
 2. 或复制
    ```text
