@@ -1,14 +1,29 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutorial video</title>
 </head>
 <body>
-    <iframe width="100%" height="250px" src="README.md"></iframe>
+
+    <!-- 放 Markdown 渲染内容 -->
+    <div id="markdown-content"></div>
+
+    <!-- JavaScript 放这里，在视频上面就执行渲染 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        fetch('README.md')
+            .then(response => response.text())
+            .then(markdown => {
+                document.getElementById('markdown-content').innerHTML = marked.parse(markdown);
+            });
+    </script>
+
+    <!-- 视频部分原封不动 -->
     <video width="1440px" height="900px" controls>
         <source src="https://github.com/0219-code/0219-code.github.io/releases/download/Movies/2026-05-03.09-25-32.mp4" type="video/mp4">
     </video>
+
 </body>
 </html>
